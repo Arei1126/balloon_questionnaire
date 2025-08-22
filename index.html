@@ -7,9 +7,77 @@
 		<title>Title</title>
 	</head>
 	<body>
-		<h1>ようこそcode flow</h1>
 		<link type="text/css" rel="stylesheet" href="./resources/css/css.css">
 		<script type="module" src="./resources/scripts/script.js"></script>
+
+		<div id="canvas-container">
+			<canvas id="main-canvas" height="1000" width="1000"></canvas>
+			<div class="overlay-div" id="result-continer">
+				<div id="result-0">
+					<img src="">
+					<span>文系</span>
+					<span id="result-counter-0">0</span>
+				</div>
+				<div id="result-1">
+					<img src="">
+					<span>理系</span>
+					<span id="result-counter-1">0</span>
+				</div>
+				<div id="result-2">
+					<img src="">
+					<span>その他</span>
+					<span id="result-counter-2">0</span>
+				</div>
+			</div>
+		</div>
+		<div id="ui-continer">
+			<div id="upper-container">
+				何系の学部出身ですか？
+			</div>
+			<div id="lower-container">
+			<div id="choices-container">
+				<div id="choice-0" class="choice">
+					<img src="">
+					<span>文系</span>
+				</div>
+				<div id="choice-1" class="choice">
+					<img src="">
+					<span>理系</span>
+				</div>
+				<div id="choice-2" class="choice">
+					<img src="">
+					<span>その他</span>
+				</div>
+
+			</div>
+			<div id="right-continer">
+				<div id="instructions-container">
+					<div id="instruction-0">
+						上へスクロールして結果を確認
+					</div>
+					<div id="instruction-1">
+						下へスクロールして戻る
+					</div>
+
+				</div>
+				<div id="control-panel-container">
+					<div class="control" id="control-add">
+						回答を追加
+					</div>
+					<div class="control" id="control-reset">
+						全回答をリセット
+					</div>
+					<div class="control" id="control-addmany">
+						たくさん回答を追加(デモ用)
+					</div>
+
+				</div>
+			</div>
+		</div>
+
+
+		</div>
+
 	</body>
 	<script>
 		if ("serviceWorker" in navigator) {
