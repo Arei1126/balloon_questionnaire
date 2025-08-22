@@ -1,0 +1,14 @@
+{
+    "name": "balloon_questionnaire",
+    "version": "1.0.0",
+    "description": "Real time questionnaire app with balloon release motif",
+    "scripts": {
+        "start": "npm install http-server && http-server -c-1",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "http-server": "^14.1.1"
+    }
+}

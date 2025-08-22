@@ -1,4 +1,4 @@
 `use strict`
-indow.addEventListener("load", async ()=>{
-
+window.addEventListener("load", async ()=>{
+    alert("どうだ？");
 });
