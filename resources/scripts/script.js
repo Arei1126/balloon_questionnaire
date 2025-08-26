@@ -67,7 +67,7 @@ const Data = {	// グローバル変数
 const DisplayData = {	// 描画用グローバル変数
 	"voted_id": null,
 	"result": [0,0,0],
-	"scale": 0.1,
+	"scale": 0.12,
 	"target_index": 0, 
 }
 
@@ -102,6 +102,7 @@ window.addEventListener("load", async ()=>{
 	console.info(pos);
 
 	const sound_break = document.querySelector("#sound_break");
+	const sound_spawn = document.querySelector("#sound_spawn");
 
 	const main_canvas = document.querySelector("#main-canvas");
 
@@ -122,20 +123,30 @@ window.addEventListener("load", async ()=>{
 
 	const Signal = document.createElement("div");	// 様々なイベントを仲介する
 
-	Signal.addEventListener("choiced", (ev) => {	
+	Signal.addEventListener("choiced", async (ev) => {	
 		// 回答操作を受けた
 		console.log(ev.detail);
 		if(!Data["answered"]){
 			Server.vote(ev.detail);
 			answer_status.innerText = ANSWER_STATUS_VOTED;
 			Data.answered = true;
-			sound_break.play();
+			try{
+				await sound_break.play();	// canvas上のバルーンを触っても、ユーザー操作が無い扱いなので、エラーが出る。
+			}
+			catch(e){
+			}
+			choices.forEach((c)=>{
+				c.classList.add("deactive")
+				c.style.pointerEvents = "none";
+
+			});
+			choices[ev.detail].classList.add("is-active");
 		}
+
 
 	});
 
 	Signal.addEventListener("resetAll",()=>{
-		// 画面上の風船をリセットする処理もひつよう
 		Server.clearAll();
 		Data.answered = false;
 		answer_status.innerText = ANSWER_STATUS_UNVOTED;
@@ -144,13 +155,21 @@ window.addEventListener("load", async ()=>{
 			const counter = result.querySelector(".result-counter");
 			counter.innerText = 0;
 		};
+		choices.forEach((c)=>{
+			c.classList.remove("deactive");
+			c.classList.remove("is-active");
+			c.style.pointerEvents =  "auto";
+		});
 	});
 
 	Signal.addEventListener("add",()=>{
-		// 一人がもう一度回答することができるようにする処理
-		// なにか、画面上の風船をリセットする処理もひつよう
 		Data.answered = false;
 		answer_status.innerText = ANSWER_STATUS_UNVOTED;
+		choices.forEach((c)=>{
+			c.classList.remove("deactive");
+			c.classList.remove("is-active");
+			c.style.pointerEvents =  "auto";
+		});
 	});
 
 	Signal.addEventListener("addMany",()=>{
@@ -158,6 +177,7 @@ window.addEventListener("load", async ()=>{
 		for (let i = 0; i < DEMO_ADD_MANY; i++){
 			Server.vote(getRandomInt(0, 2));
 		}
+			sound_spawn.play();
 	});
 
 	Signal.addEventListener("voteAdded", (ev)=>{
@@ -165,6 +185,22 @@ window.addEventListener("load", async ()=>{
 		// 回答を追加する処理
 		const counter = results[ev.detail.choice].querySelector(".result-counter");
 		counter.innerText = Number(counter.innerText) + Number(ev.detail.diff);
+	});
+
+	Signal.addEventListener("switchScene", (e)=>{
+		const id = e.detail;
+		switch (id){
+			case 0:
+				instruction_1.style.display = "none";
+				instruction_0.style.display = "flex";
+				document.body.className = "";
+				break;
+			case 1:
+				instruction_0.style.display = "none";
+				instruction_1.style.display = "flex";
+				document.body.className = "sky";
+				break;
+		}
 	});
 
 	instruction_0.addEventListener("pointerup", ()=>{ // 上へ
@@ -183,13 +219,13 @@ window.addEventListener("load", async ()=>{
 
 	document.addEventListener("wheel", (e)=>{
 		const delta = e.deltaY;
-		if(delta < 5){
+		if(delta < 10){
 			const ev = new CustomEvent("switchScene", {
 				detail: 1
 			});
 			Signal.dispatchEvent(ev);
 		}
-		else if(delta > 5){
+		else if(delta > 10){
 			const ev = new CustomEvent("switchScene", {
 				detail: 0
 			});
@@ -266,6 +302,7 @@ window.addEventListener("load", async ()=>{
 				}
 			});
 
+
 			this.reset = () => {
 				const offset_y = 0;
 				const d = 166.6;
@@ -287,6 +324,16 @@ window.addEventListener("load", async ()=>{
 
 				this.balloons = [this.balloonR, this.balloonG, this.balloonB];
 				this.balloons.forEach((b) => {b.setScale(scale_b);});
+
+				for (let i = 0; i < this.balloons.length; i++){
+					this.balloons[i].setInteractive();
+					this.balloons[i].on("pointerdown", ()=>{
+						const ev = new CustomEvent("choiced", {
+							detail: i
+						});
+						Signal.dispatchEvent(ev);
+					})
+				};
 
 				this.closeHands = [hand0, hand1, hand2];
 				this.closeHands.forEach((h) => {h.setScale(scale_hand);});
@@ -462,9 +509,12 @@ window.addEventListener("load", async ()=>{
 						const radius = 250*scale;
 						const x = pos.dx + 500;
 						const y = pos.dy + 500;
+						// ここはadjZoom
 						const newBody = this.matter.bodies.circle(x,y,radius, {
-							restitution: 0.8*DisplayData.scale, // 弾性を少し持たせるよ！
-								density: 0.1/DisplayData.scale^2 // 密度を低くして軽くするよ！
+							friction: 1,
+							frictionAir: 1,
+							restitution: 0.8, // 弾性を少し持たせるよ！
+							density: 0.1 // 密度を低くして軽くするよ！
 						});
 						let ballImage = null;
 						switch(id){
@@ -509,8 +559,8 @@ window.addEventListener("load", async ()=>{
 
 				const addBall = (id) => {
 					const d = 166.6;
-					const x = d*(1+ 2*id)
-					const y = this.cameras.main.height;
+					const x = d*(1+ 2*id) + Phaser.Math.Between(-100,100);
+					const y = this.cameras.main.height + Phaser.Math.Between(0,500);
 
 					// 画像オブジェクトを作成するよ！
 					let ballImage = null;
@@ -532,8 +582,10 @@ window.addEventListener("load", async ()=>{
 
 					// 円形の物理ボディを作成するよ！
 					const circleBody = this.matter.bodies.circle(x, y, radius, {
-						restitution: 0.8*DisplayData.scale, // 弾性を少し持たせるよ！
-						density: 0.1/DisplayData.scale^2 // 密度を低くして軽くするよ！
+						friction: 1,
+						frictionAir: 1,
+						restitution: 0.8, // 弾性を少し持たせるよ！
+						density:  DisplayData.scale // 密度を低くして軽くするよ！
 					});
 					//ballImage.setScale(DisplayData.scale);
 					// 物理ボディをワールドに追加するよ！
@@ -557,7 +609,7 @@ window.addEventListener("load", async ()=>{
 					const diff = e.detail.diff;
 					const Diff = [0,0,0];
 					Diff[id] = diff;
-					await this.spawn(Diff);
+					this.spawn(Diff);
 					//this.adjZoom(Data.result);
 				}
 			})
@@ -597,28 +649,34 @@ window.addEventListener("load", async ()=>{
 
 					// 物理ボディの位置に合わせて画像の位置を更新するよ！
 					image.x = body.position.x;
-					image.y = body.position.y;
+					image.y = body.position.y  + 157*DisplayData.scale;
 
 					// 中心からの方向ベクトルを計算するよ！
 					const direction = this.center.clone().subtract(new Phaser.Math.Vector2(body.position.x, body.position.y));
 
 					// 距離の二乗で重力の強さを調整するよ！
 					const distanceSq = direction.lengthSq();
-					let forceMagnitude = 1 * (1000000 / (distanceSq + 1)); 
-					if(forceMagnitude > 10){
-						forceMagnitude = 10;
+					/*
+					let forceMagnitude = 1 * (1000000 / (distanceSq + 1));
+					if(forceMagnitude > 5){
+						forceMagnitude = 5;
 					}
+					*/
+
+					let forceMagnitude = distanceSq * 0.00002;  // 風が周辺から中心へ向かって吹いている
 
 					// 力を加えるよ！
 					const force = direction.normalize().scale(forceMagnitude);
 					this.matter.body.applyForce(body, body.position, force);
 
+					/*
 					// ダンピング（減衰）をかけるよ！
 					const damping = 0.95; // 0.95は少し減衰、0.5は大きく減衰
 					const velocity = body.velocity;
 					velocity.x = velocity.x * damping;
 					velocity.y = velocity.y * damping;
 					this.matter.body.setVelocity(body, velocity );
+					*/
 
 
 

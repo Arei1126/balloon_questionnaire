@@ -15,67 +15,82 @@
 		-->
 		
 		<audio src="./resources/sound/Balloon-Pop.ogg" id="sound_break" display="none"></audio>
+		<audio src="./resources/sound/Balloon-spawn.ogg" id="sound_spawn" display="none"></audio>
 
 		<div id="canvas-container">
 			<canvas id="main-canvas" height="1000" width="1000"></canvas>
-			<div class="overlay-div" id="result-continer">
+			<div class="overlay-div ui-element" id="result-continer">
 				<div id="result-0" class="result">
-					<img src="">
+					<img src="./resources/img/balloonR.png" class="img-result">
 					<span>文系</span>
 					<span id="result-counter-0" class="result-counter">0</span>
 				</div>
 				<div id="result-1" class="result">
-					<img src="">
+					<img src="./resources/img/balloonG.png" class="img-result">
 					<span>理系</span>
 					<span id="result-counter-1" class="result-counter">0</span>
 				</div>
 				<div id="result-2" class="result">
-					<img src="">
+					<img src="./resources/img/balloonB.png" class="img-result">
 					<span>その他</span>
 					<span id="result-counter-2" class="result-counter">0</span>
 				</div>
 			</div>
 		</div>
 		<div id="ui-continer">
-			<div id="upper-container">
-				何系の学部出身ですか？
+			<div id="upper-container" class="ui-element">
+				Q. 何系の学部出身ですか？
 			</div>
 			<div id="lower-container">
 			<div id="choices-container">
-				<div id="choice-0" class="choice">
-					<img src="">
+				<div id="choice-0" class="choice divButton ui-element" >
+					<img src="./resources/img/balloonR.png" class="img-choice">
 					<span>文系</span>
+					<span></span>
 				</div>
-				<div id="choice-1" class="choice">
-					<img src="">
+				<div id="choice-1" class="choice divButton ui-element">
+					<img src="./resources/img/balloonG.png" class="img-choice">
 					<span>理系</span>
+					<span></span>
 				</div>
-				<div id="choice-2" class="choice">
-					<img src="">
+				<div id="choice-2" class="choice divButton ui-element">
+					<img src="./resources/img/balloonB.png" class="img-choice">
 					<span>その他</span>
+					<span></span>
 				</div>
 
 			</div>
-			<div id="right-continer">
+			<div id="right-container">
 				<div id="instructions-container">
-					<div id="instruction-0">
-						上へスクロールして結果を確認
+
+					<div id="instruction-0" class="instruction-container divButton ui-element">
+						<img src="./resources/img/scrollup.svg">
+						上空で結果を確認
+						<span></span>
 					</div>
-					<div id="instruction-1">
-						下へスクロールして戻る
+					<div id="instruction-1" class="instruction-container divButton ui-element">
+						<img src="./resources/img/scrolldown.svg">
+						地上に戻る
+						<span></span>
 					</div>
-					<div id="answer-status">あなたは未回答</div>
+					<div id="answer-status" display="none">あなたは未回答</div>
 
 				</div>
 				<div id="control-panel-container">
-					<div class="control" id="control-add">
-						回答を追加
+					<div class="control divButton ui-element" id="control-add">
+						<img src="./resources/img/add.svg">	
+						もう一度回答
+						<span></span>
 					</div>
-					<div class="control" id="control-reset">
+					<div class="control divButton ui-element" id="control-reset">
+						<img src="./resources/img/refresh.svg">
 						全回答をリセット
+						<span></span>
 					</div>
-					<div class="control" id="control-addmany">
-						たくさん回答を追加(デモ用)
+					<div class="control divButton ui-element" id="control-addmany">
+						<img src="./resources/img/shadow_add.svg">
+						たくさん回答を追加
+						<span></span>
 					</div>
 
 				</div>
