@@ -1,4 +1,10 @@
 `use strict`
+const FADE_IN = 300;
+const FADE_OUT = 300;
+const SOUND_VOLUME = 0.25;
+const DELTA_WHEEL = 100;
+const DELTA_SWIPE = 100;
+
 //import { balloon } from "./balloon.js" 
 const DEMO_ADD_MANY = 10;
 const ANSWER_STATUS_VOTED = "あなたは回答済み";
@@ -91,7 +97,14 @@ function num(str) {
 	}
 }
 
+document.addEventListener("DOMContentLoaded", ()=>{
+	document.querySelector("#load-info").showModal();
+});
+
 window.addEventListener("load", async ()=>{
+	// 最初から音を出せるようにするため、画面のどこをタッチしても操作として受け付けるようにした
+	document.body.addEventListener("pointerdown",()=>{  
+	});
 
 	const x = 10
 	const y = 10
@@ -103,6 +116,11 @@ window.addEventListener("load", async ()=>{
 
 	const sound_break = document.querySelector("#sound_break");
 	const sound_spawn = document.querySelector("#sound_spawn");
+	const sound_up = document.querySelector("#sound_up");
+	const sound_down = document.querySelector("#sound_down");
+	const sound_poyo = document.querySelector("#sound_poyo");
+	sound_up.volume = SOUND_VOLUME;
+	sound_down.volume = SOUND_VOLUME;
 
 	const main_canvas = document.querySelector("#main-canvas");
 
@@ -190,12 +208,14 @@ window.addEventListener("load", async ()=>{
 	Signal.addEventListener("switchScene", (e)=>{
 		const id = e.detail;
 		switch (id){
-			case 0:
+			case 0:   // シーン0 地上へ戻る
+				sound_down.play();
 				instruction_1.style.display = "none";
 				instruction_0.style.display = "flex";
 				document.body.className = "";
 				break;
-			case 1:
+			case 1:  // シーン1 上空へ
+				sound_up.play();
 				instruction_0.style.display = "none";
 				instruction_1.style.display = "flex";
 				document.body.className = "sky";
@@ -219,13 +239,13 @@ window.addEventListener("load", async ()=>{
 
 	document.addEventListener("wheel", (e)=>{
 		const delta = e.deltaY;
-		if(delta < 10){
+		if(delta < DELTA_WHEEL){
 			const ev = new CustomEvent("switchScene", {
 				detail: 1
 			});
 			Signal.dispatchEvent(ev);
 		}
-		else if(delta > 10){
+		else if(delta > DELTA_WHEEL){
 			const ev = new CustomEvent("switchScene", {
 				detail: 0
 			});
@@ -245,13 +265,13 @@ window.addEventListener("load", async ()=>{
 
 		// 開始位置からの移動量を計算するよ！
 		const delta = currentY - Data.startY;
-		if(delta > 50){
+		if(delta > DELTA_SWIPE){
 			const ev = new CustomEvent("switchScene", {
 				detail: 1
 			});
 			Signal.dispatchEvent(ev);
 		}
-		if(delta < 50){
+		if(delta < DELTA_SWIPE){
 			const ev = new CustomEvent("switchScene", {
 				detail: 0
 			});
@@ -298,9 +318,13 @@ window.addEventListener("load", async ()=>{
 			super({ key: 'scene0' });
 			Signal.addEventListener("switchScene",(ev)=>{
 				if(ev.detail == 1){
-					this.scene.start("scene1");
+					this.cameras.main.fadeOut(FADE_OUT,256,256,256);
+					this.cameras.main.once('camerafadeoutcomplete', () => {
+						this.scene.start("scene1");
+					});
 				}
 			});
+
 
 
 			this.reset = () => {
@@ -356,6 +380,13 @@ window.addEventListener("load", async ()=>{
 				this.reset()
 				const id = DisplayData.voted_id;
 				this.balloons.forEach((b) => {b.setAlpha(0);});
+				this.closeHands.forEach((h) =>{
+					h.setAlpha(1);
+				});
+				
+				this.openHands.forEach((h) =>{
+					h.setAlpha(0);
+				});
 				this.closeHands[id].setAlpha(0);
 				this.openHands[id].setAlpha(1);
 			}
@@ -409,18 +440,24 @@ window.addEventListener("load", async ()=>{
 		}
 
 		create () {
+			this.cameras.main.setBackgroundColor('#ffffff');
+			this.cameras.main.fadeIn(FADE_IN, 256, 256, 256);
 		if(DisplayData.voted_id == null){
 				this.reset();
 			}else{
 				this.reset_after_voted();
 			}
 		
+			console.log("シーン1ロード終了");
+			document.querySelector("#load-info").close();
+
 		}
 
 		update() {
 			if(DisplayData.voted_id !== null){
 				this.balloons[DisplayData.voted_id].y -= 10;
 			}
+
 		}
 
 
@@ -433,7 +470,10 @@ window.addEventListener("load", async ()=>{
 			super({ key: 'scene1' });
 			Signal.addEventListener("switchScene",(e)=>{
 				if(e.detail == 0){
-					this.scene.start("scene0");
+					this.cameras.main.fadeOut(FADE_OUT,256,256,256);
+					this.cameras.main.once('camerafadeoutcomplete', () => {
+						this.scene.start("scene0");
+					});
 				}
 			});
 
@@ -451,10 +491,17 @@ window.addEventListener("load", async ()=>{
 					}
 				}
 				this.Balls = [[],[],[]];
+				this.invisibleBall = [];
 
 			});
 
+			this.invisibleBall = [];
+
+
+
 			this.Balls = [[],[],[]];
+
+
 
 			this.adjZoom = (results) => {
 				console.info(this.Balls);
@@ -629,6 +676,29 @@ window.addEventListener("load", async ()=>{
 		}
 
 		create(){
+			this.cameras.main.setBackgroundColor('#ffffff');
+			this.cameras.main.fadeIn(FADE_IN, 256, 256, 256);
+
+
+			this.input.on('pointerdown', (pointer) => {  // ボールを触ったら避けるような動作を追加
+				sound_poyo.play();
+				const x = pointer.x;
+				const y = pointer.y;
+
+				const radius = 2500*DisplayData.scale + 100*Phaser.Math.Between(-5,5);
+
+				// 見えない円を追加
+				const circleBody = this.matter.bodies.circle(x, y, radius, {
+					friction: 1,
+					frictionAir: 1,
+					restitution: 10, // 弾性を少し持たせるよ！
+					density:  DisplayData.scale // 密度を低くして軽くするよ！
+				});
+				// 物理ボディをワールドに追加するよ！
+				this.matter.world.add(circleBody);
+				this.invisibleBall.push(circleBody);
+			});
+
 			this.add.image(500,500, "bg_sora");
 
 			this.center = new Phaser.Math.Vector2(
@@ -639,10 +709,18 @@ window.addEventListener("load", async ()=>{
 			// 本当はここで描画以外のグローバル変数にアクセスしたくはない。
 			this.spawn(Data.result);
 			//this.adjZoom(Data.result);
+			//
 
 		}
 
 		update(){
+
+
+			this.invisibleBall.forEach(ball => {
+				this.matter.world.remove(ball);
+			});
+			this.invisibleBall = [];
+
 			this.Balls.forEach(Ball => {		// 各色、各ボールについてなんとかする
 				Ball.forEach(ballData => {
 					const { body, image } = ballData;
@@ -705,7 +783,13 @@ window.addEventListener("load", async ()=>{
 		}
 	};
 
+	//document.body.style.pointerEvents = "none";
 	const game = new Phaser.Game(config);
+
+	game.events.on("ready", ()=>{
+
+
+	});
 
 	async function update(){
 		const serverData = Server.readAll();
