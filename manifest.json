@@ -1,7 +1,7 @@
 {
-	"name": "pwaTemplate",
-	"description":"The template for pwa" ,
-	"short_name": "pwaTemplate",
+	"name": "balloon quesionnaire",
+	"description":"quessionaire with gf" ,
+	"short_name": "balloonQ",
 	"start_url" : "./index.html",
 	"id": "./index.html",
 	"scope": "./",

@@ -12,33 +12,6 @@ const ANSWER_STATUS_UNVOTED = "あなたは未回答";
 
 const SCALE_TIMING = [3, 10, 50, 100, 500 ,1000, 5000, 10000, Infinity]
 
-function toPolar(dx, dy) {
-    // 左上原点（Y軸下向きが正）を考慮して、Yを反転させてから計算するよん！
-    const normalY = -dy;
-    
-    // 距離（r）は、ピタゴラスの定理で求めるよ！超基本だね！
-    const r = Math.sqrt(dx * dx + normalY * normalY);
-    
-    // 角度（theta）は、Math.atan2を使うのが最高に便利だよ！
-    // 角度の範囲は -π から π になるよん！
-    const theta = Math.atan2(normalY, dx);
-    
-    return { r, theta };
-}
-
-
-
-function toCartesian(r, theta) {
-    // X方向の相対位置は、r * cos(theta) で求められるよん！
-    const dx = r * Math.cos(theta);
-    
-    // Y方向は、r * sin(theta) で求めるんだけど、
-    // 左上原点に戻すために、最後に-1倍するのを忘れないでね！
-    const normalY = r * Math.sin(theta);
-    const dy = -normalY;
-    
-    return { dx, dy };
-}
 
 class server {	// phpによるバックエンドの代替
 	constructor(){
@@ -108,11 +81,6 @@ window.addEventListener("load", async ()=>{
 
 	const x = 10
 	const y = 10
-
-	const polar = toPolar(x, y);
-	console.info(polar)
-	const pos = toCartesian(polar.r, polar.theta)
-	console.info(pos);
 
 	const sound_break = document.querySelector("#sound_break");
 	const sound_spawn = document.querySelector("#sound_spawn");
@@ -314,7 +282,7 @@ window.addEventListener("load", async ()=>{
 
 	class scene0 extends Phaser.Scene {
 		constructor() {
-			// 親クラス（Phaser.Scene）のコンストラクタを呼び出すのはマスト！
+			// 親クラス（Phaser.Scene）のコンストラクタを呼び出す
 			super({ key: 'scene0' });
 			Signal.addEventListener("switchScene",(ev)=>{
 				if(ev.detail == 1){
@@ -332,7 +300,7 @@ window.addEventListener("load", async ()=>{
 				const d = 166.6;
 				const scale_b = 0.65 
 				const scale_hand = 0.5
-				// オブジェクトを生成する！
+				// オブジェクトを生成する
 				// この中のthisはgameの方
 				this.add.image(500,500, "bg");
 
@@ -448,7 +416,6 @@ window.addEventListener("load", async ()=>{
 				this.reset_after_voted();
 			}
 		
-			console.log("シーン1ロード終了");
 			document.querySelector("#load-info").close();
 
 		}
@@ -466,7 +433,6 @@ window.addEventListener("load", async ()=>{
 	
 	class scene1 extends Phaser.Scene {
 		constructor() {
-			// 親クラス（Phaser.Scene）のコンストラクタを呼び出すのはマスト！
 			super({ key: 'scene1' });
 			Signal.addEventListener("switchScene",(e)=>{
 				if(e.detail == 0){
@@ -497,119 +463,15 @@ window.addEventListener("load", async ()=>{
 
 			this.invisibleBall = [];
 
-
-
 			this.Balls = [[],[],[]];
 
-
-
-			this.adjZoom = (results) => {
-				console.info(this.Balls);
-				let sum = 0;
-				for (const res of results){
-					sum += res;
-				}
-
-				if(sum > SCALE_TIMING[DisplayData.target_index]){
-					DisplayData.target_index++;
-				}
-				else{
-					return;
-				}
-				
-				//const isPowerOfTen = Number.isInteger(Math.log(sum));
-
-				// iが10, 100, 1000...に一致したら
-				//if (!isPowerOfTen) {
-					//return;
-				//}
-				console.log("スケール変更");
-				//const scale = 1/Math.sqrt(sum);
-
-
-
-				const scale = 0.1;
-				//const scale = DisplayData.scale * Math.pow(0.95, sum)
-				DisplayData.scale = scale;
-				console.log("スケール: "+ scale); 
-				for(let id = 0; id < this.Balls.length; id++){
-					for(const Ball of this.Balls[id]){
-						const index = this.Balls[id].indexOf(Ball);
-						if(index < 0){
-							continue;  // 空ならやらない
-						}
-
-
-						const body = Ball.body;
-						const image = Ball.image;
-
-
-
-
-						const prev_x = body.position.x
-						const prev_y = body.position.y
-
-						const pos_polar = toPolar(prev_x - 500, prev_y - 500);
-						pos_polar.r = pos_polar.r * scale;
-						const pos = toCartesian(pos_polar.r, pos_polar.theta);
-						
-						const radius = 250*scale;
-						const x = pos.dx + 500;
-						const y = pos.dy + 500;
-						// ここはadjZoom
-						const newBody = this.matter.bodies.circle(x,y,radius, {
-							friction: 1,
-							frictionAir: 1,
-							restitution: 0.8, // 弾性を少し持たせるよ！
-							density: 0.1 // 密度を低くして軽くするよ！
-						});
-						let ballImage = null;
-						switch(id){
-							case 0:
-								ballImage = this.add.image(x, y, 'balloonR');
-								break;
-
-							case 1:
-								ballImage = this.add.image(x, y, 'balloonG');
-								break;
-
-							case 2:
-								ballImage = this.add.image(x, y, 'balloonB');
-								break;
-						}
-
-						ballImage.setScale(scale);
-
-						// 物理ボディをワールドに追加するよ！
-						this.matter.world.add(newBody);
-
-						// オブジェクトの配列にプッシュして、後で管理できるようにしておくよ！
-						this.Balls[id][index] = { body: newBody, image: ballImage };
-						
-						// 前のやつは殺す
-						//this.Balls[id].splice(index,1);
-						this.matter.world.remove(body);
-						image.destroy();
-
-
-
-
-
-					}
-				}
-		
-			};
-
-
 			this.spawn = (results) =>{
-				
 
 				const addBall = (id) => {
 					const d = 166.6;
 					const x = d*(1+ 2*id) + Phaser.Math.Between(-100,100);
 					const y = this.cameras.main.height + Phaser.Math.Between(0,500);
 
-					// 画像オブジェクトを作成するよ！
 					let ballImage = null;
 					switch(id){
 						case 0:
@@ -625,20 +487,18 @@ window.addEventListener("load", async ()=>{
 							break;
 					}
 					const radius = 250*DisplayData.scale;
-					ballImage.setScale(DisplayData.scale); // 画像のスケールを調整するよ！
+					ballImage.setScale(DisplayData.scale); 
 
-					// 円形の物理ボディを作成するよ！
+					// 円形の物理ボディを作成する
 					const circleBody = this.matter.bodies.circle(x, y, radius, {
 						friction: 1,
 						frictionAir: 1,
-						restitution: 0.8, // 弾性を少し持たせるよ！
-						density:  DisplayData.scale // 密度を低くして軽くするよ！
+						restitution: 0.8, // 弾性を少し持たせ！
+						density:  DisplayData.scale // 密度を低くして軽くす！
 					});
-					//ballImage.setScale(DisplayData.scale);
-					// 物理ボディをワールドに追加するよ！
+
 					this.matter.world.add(circleBody);
 
-					// オブジェクトの配列にプッシュして、後で管理できるようにしておくよ！
 					this.Balls[id].push({ body: circleBody, image: ballImage });
 				}
 				for (let i = 0; i < results.length; i++){
@@ -657,7 +517,6 @@ window.addEventListener("load", async ()=>{
 					const Diff = [0,0,0];
 					Diff[id] = diff;
 					this.spawn(Diff);
-					//this.adjZoom(Data.result);
 				}
 			})
 
@@ -691,10 +550,10 @@ window.addEventListener("load", async ()=>{
 				const circleBody = this.matter.bodies.circle(x, y, radius, {
 					friction: 1,
 					frictionAir: 1,
-					restitution: 10, // 弾性を少し持たせるよ！
-					density:  DisplayData.scale // 密度を低くして軽くするよ！
+					restitution: 10, 
+					density:  DisplayData.scale 
 				});
-				// 物理ボディをワールドに追加するよ！
+				// 物理ボディをワールドに追加する
 				this.matter.world.add(circleBody);
 				this.invisibleBall.push(circleBody);
 			});
@@ -708,14 +567,10 @@ window.addEventListener("load", async ()=>{
 			
 			// 本当はここで描画以外のグローバル変数にアクセスしたくはない。
 			this.spawn(Data.result);
-			//this.adjZoom(Data.result);
-			//
 
 		}
 
 		update(){
-
-
 			this.invisibleBall.forEach(ball => {
 				this.matter.world.remove(ball);
 			});
@@ -725,54 +580,33 @@ window.addEventListener("load", async ()=>{
 				Ball.forEach(ballData => {
 					const { body, image } = ballData;
 
-					// 物理ボディの位置に合わせて画像の位置を更新するよ！
+					// 物理ボディの位置に合わせて画像の位置を更新する
 					image.x = body.position.x;
 					image.y = body.position.y  + 157*DisplayData.scale;
 
-					// 中心からの方向ベクトルを計算するよ！
+					// 中心からの方向ベクトルを計算する
 					const direction = this.center.clone().subtract(new Phaser.Math.Vector2(body.position.x, body.position.y));
 
-					// 距離の二乗で重力の強さを調整するよ！
+					// 距離の二乗で重力の強さを調整する
 					const distanceSq = direction.lengthSq();
-					/*
-					let forceMagnitude = 1 * (1000000 / (distanceSq + 1));
-					if(forceMagnitude > 5){
-						forceMagnitude = 5;
-					}
-					*/
+
 
 					let forceMagnitude = distanceSq * 0.00002;  // 風が周辺から中心へ向かって吹いている
 
-					// 力を加えるよ！
+					// 力を加える
 					const force = direction.normalize().scale(forceMagnitude);
 					this.matter.body.applyForce(body, body.position, force);
-
-					/*
-					// ダンピング（減衰）をかけるよ！
-					const damping = 0.95; // 0.95は少し減衰、0.5は大きく減衰
-					const velocity = body.velocity;
-					velocity.x = velocity.x * damping;
-					velocity.y = velocity.y * damping;
-					this.matter.body.setVelocity(body, velocity );
-					*/
-
-
-
 				});
 			});
-
-			{		// zoomをする
-
-			}
 
 		}
 	}
 
 	const config = {
-		type: Phaser.CANVAS, // もちろんPhaser.AUTOでOK!
+		type: Phaser.CANVAS,
 		width: 1000,
 		height: 1000,
-		canvas: main_canvas, // ここがポイント！既存のcanvasをここに指定するんだからね！
+		canvas: main_canvas, 
 		scene: [scene0, scene1],
 		physics: {
 			default: 'matter',
@@ -783,15 +617,10 @@ window.addEventListener("load", async ()=>{
 		}
 	};
 
-	//document.body.style.pointerEvents = "none";
 	const game = new Phaser.Game(config);
 
-	game.events.on("ready", ()=>{
 
-
-	});
-
-	async function update(){
+	async function update(){  // リアルタイムに結果の数字を更新
 		const serverData = Server.readAll();
 		for (let i = 0; i < Data.result.length; i++){
 			if(Data.result[i] == serverData[i]){
